@@ -143,6 +143,9 @@ static void __vprintk(const char *fmt, va_list ap)
 			}
 
 			switch (c) {
+			case 'c':
+				*p++ = (unsigned char)va_arg(ap, int);
+				break;
 			case 'd':
 				if (longmode)
 					v = va_arg(ap, long);
