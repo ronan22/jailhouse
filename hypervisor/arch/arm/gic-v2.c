@@ -23,20 +23,17 @@ void *gich_base;
 
 static int gic_init(void)
 {
-	int err;
+	gicc_base = paging_map_device(
+			system_config->platform_info.arm.gicc_base, GICC_SIZE);
+	if (!gicc_base)
+		return -ENOMEM;
 
-	gicc_base =
-	    (void *)(unsigned long)system_config->platform_info.arm.gicc_base;
-	gich_base =
-	    (void *)(unsigned long)system_config->platform_info.arm.gich_base;
+	gich_base = paging_map_device(
+			system_config->platform_info.arm.gich_base, GICH_SIZE);
+	if (!gich_base)
+		return -ENOMEM;
 
-	err = arch_map_device(gicc_base, gicc_base, GICC_SIZE);
-	if (err)
-		return err;
-
-	err = arch_map_device(gich_base, gich_base, GICH_SIZE);
-
-	return err;
+	return 0;
 }
 
 static void gic_clear_pending_irqs(void)
@@ -182,21 +179,23 @@ static int gic_cell_init(struct cell *cell)
 	 */
 	err = paging_create(&cell->arch.mm,
 			    system_config->platform_info.arm.gicv_base,
-			    GICC_SIZE, (unsigned long)gicc_base,
+			    GICC_SIZE,
+			    system_config->platform_info.arm.gicc_base,
 			    (PTE_FLAG_VALID | PTE_ACCESS_FLAG |
 			     S2_PTE_ACCESS_RW | S2_PTE_FLAG_DEVICE),
 			    PAGING_COHERENT);
 	if (err)
 		return err;
 
-	mmio_region_register(cell, (unsigned long)gicd_base, GICD_SIZE,
-			     gic_handle_dist_access, NULL);
+	mmio_region_register(cell, system_config->platform_info.arm.gicd_base,
+			     GICD_SIZE, gic_handle_dist_access, NULL);
 	return 0;
 }
 
 static void gic_cell_exit(struct cell *cell)
 {
-	paging_destroy(&cell->arch.mm, (unsigned long)gicc_base, GICC_SIZE,
+	paging_destroy(&cell->arch.mm,
+		       system_config->platform_info.arm.gicc_base, GICC_SIZE,
 		       PAGING_COHERENT);
 }
 
