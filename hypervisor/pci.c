@@ -419,10 +419,21 @@ invalid_access:
 	return MMIO_ERROR;
 }
 
+u32 __attribute__((weak)) pci_mmconfig_address_to_reg(u64 address)
+{
+	return address & 0xfff;
+}
+
+u16 __attribute__((weak)) pci_mmconfig_address_to_bdf(u64 address)
+{
+	return address >> 12;
+}
+
 static enum mmio_result pci_mmconfig_access_handler(void *arg,
 						    struct mmio_access *mmio)
 {
-	u32 reg_addr = mmio->address & 0xfff;
+	u32 reg_addr = pci_mmconfig_address_to_reg(mmio->address);
+	u16 bdf = pci_mmconfig_address_to_bdf(mmio->address);
 	struct pci_device *device;
 	enum pci_access result;
 	u32 val;
@@ -431,7 +442,7 @@ static enum mmio_result pci_mmconfig_access_handler(void *arg,
 	if (mmio->size > 4)
 		goto invalid_access;
 
-	device = pci_get_assigned_device(this_cell(), mmio->address >> 12);
+	device = pci_get_assigned_device(this_cell(), bdf);
 
 	if (mmio->is_write) {
 		result = pci_cfg_write_moderate(device, reg_addr, mmio->size,
@@ -451,8 +462,8 @@ static enum mmio_result pci_mmconfig_access_handler(void *arg,
 
 invalid_access:
 	panic_printk("FATAL: Invalid PCI MMCONFIG write, device %02x:%02x.%x, "
-		     "reg: %x, size: %d\n", PCI_BDF_PARAMS(mmio->address >> 12),
-		     reg_addr, mmio->size);
+		     "reg: %x, size: %d\n", PCI_BDF_PARAMS(bdf), reg_addr,
+		     mmio->size);
 	return MMIO_ERROR;
 
 }

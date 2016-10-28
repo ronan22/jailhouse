@@ -244,5 +244,25 @@ int arch_pci_update_msi(struct pci_device *device,
  */
 int arch_pci_update_msix_vector(struct pci_device *device, unsigned int index);
 
+/**
+ * Translate MMCONFIG access address to register address.
+ * @param address	Address into MMCONFIG region.
+ *
+ * @return Configuration Space register address.
+ *
+ * @note Can be overwritten on platforms with non-conforming mappings.
+ */
+u32 pci_mmconfig_address_to_reg(u64 address);
+
+/**
+ * Translate MMCONFIG access address to Bus/Device/Function triple.
+ * @param address	Address into MMCONFIG region.
+ *
+ * @return Target BDF.
+ *
+ * @note Can be overwritten on platforms with non-conforming mappings.
+ */
+u16 pci_mmconfig_address_to_bdf(u64 address);
+
 /** @} PCI */
 #endif /* !_JAILHOUSE_PCI_H */
